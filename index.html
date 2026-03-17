@@ -25,12 +25,9 @@
         .badge-dam { background: #fee2e2; color: #991b1b; }
         .view-btn { background: #eff6ff; color: #3b82f6; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; }
         #modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); display: none; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); }
-        .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
-        #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
+        .modal-content { background: white; width: 95%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .img-box { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 10px 0; border: 1px solid #e2e8f0; display: block; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-        
-        /* DODANY STYL STRZAŁEK */
-        .gal-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; z-index: 1000; }
     </style>
 </head>
 <body>
@@ -81,9 +78,8 @@
             <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
             
-            <button class="gal-btn" style="left: 10px;" onclick="przelaczZdjecie(-1)">&#10094;</button>
-            <img id="mImg" src="" alt="Zdjęcie produktu" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
-            <button class="gal-btn" style="right: 10px;" onclick="przelaczZdjecie(1)">&#10095;</button>
+            <img id="mImg1" class="img-box" src="" alt="Zdjęcie 1">
+            <img id="mImg2" class="img-box" src="" alt="Zdjęcie 2" onerror="this.style.display='none'">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
@@ -166,30 +162,22 @@
             `).join('');
         }
 
-        // --- TYLKO TA CZĘŚĆ ZOSTAŁA DODANA DLA GALERII ---
-        let aktK = "";
-        let aktN = 1;
-
         function openModal(kod) {
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
-            aktK = kod; aktN = 1;
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            ladujZdjecie();
+            
+            // ŁADOWANIE DWÓCH ZDJĘĆ
+            document.getElementById('mImg1').src = FOTO_PATH + i.Kod + ".jpg";
+            
+            const img2 = document.getElementById('mImg2');
+            img2.style.display = 'block'; // Pokaż na start
+            img2.src = FOTO_PATH + i.Kod + "_2.jpg";
+            
             document.getElementById('modal').style.display = 'flex';
-        }
-
-        function ladujZdjecie() {
-            const s = aktN === 1 ? "" : "_" + aktN;
-            document.getElementById('mImg').src = FOTO_PATH + aktK + s + ".jpg";
-        }
-
-        function przelaczZdjecie(d) {
-            aktN += d; if (aktN < 1) aktN = 1;
-            ladujZdjecie();
         }
 
         function toggleModal() { document.getElementById('modal').style.display = 'none'; }
