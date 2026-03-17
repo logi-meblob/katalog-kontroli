@@ -1,0 +1,179 @@
+<%@ Page Language="C#" %>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Kontroli - Meblobranie</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .header h1 { color: #1e3a8a; margin: 0; font-size: 24px; font-weight: 800; }
+        #statusInfo { background: #dbeafe; color: #1e40af; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .filter-panel { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .filter-group label { display: block; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; }
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; font-size: 11px; text-transform: uppercase; color: #64748b; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+        .badge-hdl { background: #dcfce7; color: #166534; }
+        .badge-dam { background: #fee2e2; color: #991b1b; }
+        .view-btn { background: #eff6ff; color: #3b82f6; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; }
+        #modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); display: none; align-items: center; justify-content: center; z-index: 999; backdrop-filter: blur(4px); }
+        .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
+        #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
+        .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>System Kontroli Meblobranie</h1>
+            <div id="statusInfo">Inicjalizacja systemu...</div>
+        </div>
+        
+        <div class="filter-panel">
+            <div class="filter-group">
+                <label>Szukaj (Kod / SKU)</label>
+                <input type="text" id="searchTxt" oninput="applyFilters()" placeholder="Wpisz kod...">
+            </div>
+            <div class="filter-group">
+                <label>Asortyment</label>
+                <select id="filterAsortyment" onchange="applyFilters()"><option value="">Wszystkie</option></select>
+            </div>
+            <div class="filter-group">
+                <label>Kondycja</label>
+                <select id="filterKondycja" onchange="applyFilters()"><option value="">Wszystkie</option></select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button onclick="sortByDate()" class="view-btn" style="width: 100%; font-weight: bold;">Sortuj datę <span id="sortIcon">↕</span></button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kod</th>
+                        <th>SKU</th>
+                        <th>Data kontroli</th>
+                        <th style="text-align: center;">Kondycja</th>
+                        <th>Asortyment</th>
+                        <th style="text-align: center;">Szczegóły</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal" onclick="if(event.target == this) toggleModal()">
+        <div class="modal-content">
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
+            <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
+            <img id="mImg" src="" alt="Zdjęcie produktu">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
+                <div class="info-card"><small>Kondycja</small><br><strong id="mKond"></strong></div>
+            </div>
+            <div class="info-card" style="background: #eff6ff;"><small>Uwagi</small><p id="mOpis" style="margin:5px 0 0 0; font-style:italic;"></p></div>
+        </div>
+    </div>
+
+    <script>
+        const EXCEL_FILE = "dane.xlsx";
+        const FOTO_PATH = "foto/";
+        let rawData = [];
+        let dateAsc = false;
+
+        async function init() {
+            const status = document.getElementById('statusInfo');
+            try {
+                // SharePoint wymaga czasem pełnego uwierzytelnienia przy fetchu
+                const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+                
+                if (!response.ok) throw new Error("Status: " + response.status + " - Brak dostępu do pliku.");
+                
+                const data = await response.arrayBuffer();
+                const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                
+                if (rawData.length === 0) throw new Error("Plik Excel jest pusty.");
+
+                populateFilters();
+                render(rawData);
+                status.innerText = "Baza aktywna: " + rawData.length + " poz.";
+                status.style.background = "#dcfce7"; status.style.color = "#166534";
+            } catch (err) {
+                status.innerText = "BŁĄD: " + err.message;
+                status.style.background = "#fee2e2"; status.style.color = "#991b1b";
+            }
+        }
+
+        function populateFilters() {
+            const asort = [...new Set(rawData.map(i => i.Asortyment))].filter(Boolean).sort();
+            const kond = [...new Set(rawData.map(i => i.Kondycja))].filter(Boolean).sort();
+            asort.forEach(v => document.getElementById('filterAsortyment').innerHTML += `<option value="${v}">${v}</option>`);
+            kond.forEach(v => document.getElementById('filterKondycja').innerHTML += `<option value="${v}">${v}</option>`);
+        }
+
+        function applyFilters() {
+            const txt = document.getElementById('searchTxt').value.toLowerCase();
+            const fA = document.getElementById('filterAsortyment').value;
+            const fK = document.getElementById('filterKondycja').value;
+            const filtered = rawData.filter(i => {
+                const mTxt = String(i.Kod || '').toLowerCase().includes(txt) || String(i.SKU || '').toLowerCase().includes(txt);
+                return mTxt && (!fA || i.Asortyment === fA) && (!fK || i.Kondycja === fK);
+            });
+            render(filtered);
+        }
+
+        function sortByDate() {
+            dateAsc = !dateAsc;
+            document.getElementById('sortIcon').innerText = dateAsc ? "↑" : "↓";
+            rawData.sort((a,b) => {
+                const dA = new Date(a['Data kontroli'] || a['Data kontrol'] || 0);
+                const dB = new Date(b['Data kontroli'] || b['Data kontrol'] || 0);
+                return dateAsc ? dA - dB : dB - dA;
+            });
+            applyFilters();
+        }
+
+        function render(data) {
+            document.getElementById('tableBody').innerHTML = data.map(i => `
+                <tr>
+                    <td style="font-weight:800; color:#1e3a8a;">${i.Kod || '---'}</td>
+                    <td style="color:#64748b; font-family:monospace;">${i.SKU || '---'}</td>
+                    <td>${i['Data kontroli'] instanceof Date ? i['Data kontroli'].toLocaleDateString('pl-PL') : (i['Data kontroli'] || '---')}</td>
+                    <td style="text-align:center;"><span class="badge ${i.Kondycja === 'HDL' ? 'badge-hdl' : 'badge-dam'}">${i.Kondycja || '---'}</span></td>
+                    <td>${i.Asortyment || '---'}</td>
+                    <td style="text-align:center;"><button onclick="openModal('${i.Kod}')" class="view-btn">🔍</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function openModal(kod) {
+            const i = rawData.find(x => String(x.Kod) === String(kod));
+            if(!i) return;
+            document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
+            document.getElementById('mSku').innerText = i.SKU || '---';
+            document.getElementById('mKond').innerText = i.Kondycja || '---';
+            document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
+            document.getElementById('mImg').src = FOTO_PATH + i.Kod + ".jpg";
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function toggleModal() { document.getElementById('modal').style.display = 'none'; }
+        window.onload = init;
+    </script>
+</body>
+</html>
