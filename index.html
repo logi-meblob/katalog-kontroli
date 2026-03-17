@@ -26,8 +26,8 @@
         .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: white; border: 1px solid #e2e8f0; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
-        .nav-btn:hover { background: #f8fafc; }
+        .nav-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; }
+        .nav-btn:hover { background: #3b82f6; }
     </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
     <div class="container">
         <div class="header">
             <h1>Katalog Kontroli Meblobranie</h1>
-            <div id="statusInfo">Inicjalizacja systemu...</div>
+            <div id="statusInfo">Wczytywanie...</div>
         </div>
         
         <div class="filter-panel">
@@ -52,7 +52,7 @@
                 <select id="filterKondycja" onchange="applyFilters()"><option value="">Wszystkie</option></select>
             </div>
             <div style="display: flex; align-items: flex-end;">
-                <button onclick="sortByDate()" class="view-btn" style="width: 100%; font-weight: bold;">Sortuj datę <span id="sortIcon">↕</span></button>
+                <button onclick="sortByDate()" class="view-btn" style="width: 100%; font-weight: bold;">Data ↕</button>
             </div>
         </div>
 
@@ -65,7 +65,7 @@
                         <th>Data kontroli</th>
                         <th style="text-align: center;">Kondycja</th>
                         <th>Asortyment</th>
-                        <th style="text-align: center;">Szczegóły</th>
+                        <th style="text-align: center;">Otwórz</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -73,16 +73,15 @@
         </div>
     </div>
 
-    <div id="modal" onclick="if(event.target == this) toggleModal()">
+    <div id="modal" onclick="if(event.target == this) closeModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index:10;" onclick="toggleModal()">&times;</button>
+            <button style="position:absolute; top:15px; right:20px; border:none; background:none; font-size:35px; cursor:pointer;" onclick="closeModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
             
-            <div style="position: relative;">
-                <button id="prevBtn" class="nav-btn" style="left: -20px;" onclick="changeImage(-1)">&#10094;</button>
-                <img id="mImg" src="" alt="Zdjęcie produktu">
-                <button id="nextBtn" class="nav-btn" style="right: -20px;" onclick="changeImage(1)">&#10095;</button>
-                <div id="imgCounter" style="text-align:center; font-size:11px; color:#94a3b8; margin-top:-15px; margin-bottom:10px;"></div>
+            <div style="position: relative; height: 320px;">
+                <button class="nav-btn" style="left: -10px;" onclick="changeImg(-1)">&#10094;</button>
+                <img id="mImg" src="" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
+                <button class="nav-btn" style="right: -10px;" onclick="changeImg(1)">&#10095;</button>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -95,28 +94,27 @@
 
     <script>
         const EXCEL_FILE = "dane.xlsx";
-        const FOTO_PATH = "foto/foto/"; // Poprawione na Twój folder na GitHubie
+        // UWAGA: Sprawdź czy masz folder foto czy foto/foto. Ustawiam na foto/
+        const FOTO_PATH = "foto/"; 
         let rawData = [];
         let dateAsc = false;
-        
-        // Zmienne dla galerii
-        let currentImgIndex = 0;
-        let availableImages = [];
+        let currentKod = "";
+        let currentNum = 1;
 
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
-                const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime());
-                if (!response.ok) throw new Error("Brak dostępu do pliku Excel.");
+                const response = await fetch(EXCEL_FILE + '?v=' + Date.now());
                 const data = await response.arrayBuffer();
                 const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                
                 populateFilters();
                 render(rawData);
-                status.innerText = "Baza aktywna: " + rawData.length + " poz.";
+                status.innerText = "Aktywne: " + rawData.length;
             } catch (err) {
-                status.innerText = "BŁĄD: " + err.message;
-                status.style.background = "#fee2e2";
+                status.innerText = "BŁĄD PLIKU";
+                console.error(err);
             }
         }
 
@@ -140,7 +138,6 @@
 
         function sortByDate() {
             dateAsc = !dateAsc;
-            document.getElementById('sortIcon').innerText = dateAsc ? "↑" : "↓";
             rawData.sort((a,b) => {
                 const dA = new Date(a['Data kontroli'] || 0);
                 const dB = new Date(b['Data kontroli'] || 0);
@@ -153,7 +150,7 @@
             document.getElementById('tableBody').innerHTML = data.map(i => `
                 <tr>
                     <td style="font-weight:800; color:#1e3a8a;">${i.Kod || '---'}</td>
-                    <td style="color:#64748b; font-family:monospace;">${i.SKU || '---'}</td>
+                    <td>${i.SKU || '---'}</td>
                     <td>${i['Data kontroli'] instanceof Date ? i['Data kontroli'].toLocaleDateString('pl-PL') : (i['Data kontroli'] || '---')}</td>
                     <td style="text-align:center;"><span class="badge ${i.Kondycja === 'HDL' ? 'badge-hdl' : 'badge-dam'}">${i.Kondycja || '---'}</span></td>
                     <td>${i.Asortyment || '---'}</td>
@@ -162,45 +159,33 @@
             `).join('');
         }
 
-        async function openModal(kod) {
+        function openModal(kod) {
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
-
+            currentKod = kod;
+            currentNum = 1;
+            
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
             
-            // Logika sprawdzania wielu zdjęć
-            availableImages = [FOTO_PATH + i.Kod + ".jpg"];
-            for (let n = 2; n <= 5; n++) { // Sprawdza do 5 zdjęć (_2, _3, _4, _5)
-                const nextImg = FOTO_PATH + i.Kod + "_" + n + ".jpg";
-                try {
-                    const check = await fetch(nextImg, { method: 'HEAD' });
-                    if (check.ok) availableImages.push(nextImg);
-                } catch (e) {}
-            }
-
-            currentImgIndex = 0;
-            updateModalImage();
+            updateImage();
             document.getElementById('modal').style.display = 'flex';
         }
 
-        function updateModalImage() {
-            document.getElementById('mImg').src = availableImages[currentImgIndex];
-            document.getElementById('prevBtn').style.display = availableImages.length > 1 ? 'block' : 'none';
-            document.getElementById('nextBtn').style.display = availableImages.length > 1 ? 'block' : 'none';
-            document.getElementById('imgCounter').innerText = availableImages.length > 1 ? `Zdjęcie ${currentImgIndex + 1} z ${availableImages.length}` : '';
+        function updateImage() {
+            const suffix = currentNum === 1 ? "" : "_" + currentNum;
+            document.getElementById('mImg').src = FOTO_PATH + currentKod + suffix + ".jpg";
         }
 
-        function changeImage(dir) {
-            currentImgIndex += dir;
-            if (currentImgIndex < 0) currentImgIndex = availableImages.length - 1;
-            if (currentImgIndex >= availableImages.length) currentImgIndex = 0;
-            updateModalImage();
+        function changeImg(step) {
+            currentNum += step;
+            if (currentNum < 1) currentNum = 1;
+            updateImage();
         }
 
-        function toggleModal() { document.getElementById('modal').style.display = 'none'; }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
         window.onload = init;
     </script>
 </body>
