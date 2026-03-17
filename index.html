@@ -80,6 +80,7 @@
             
             <img id="mImg1" class="img-box" src="" alt="Zdjęcie 1">
             <img id="mImg2" class="img-box" src="" alt="Zdjęcie 2" onerror="this.style.display='none'">
+            <img id="mImg3" class="img-box" src="" alt="Zdjęcie 3" onerror="this.style.display='none'">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
@@ -170,12 +171,16 @@
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
             
-            // ŁADOWANIE DWÓCH ZDJĘĆ
+            // ŁADOWANIE ZDJĘĆ
             document.getElementById('mImg1').src = FOTO_PATH + i.Kod + ".jpg";
             
             const img2 = document.getElementById('mImg2');
-            img2.style.display = 'block'; // Pokaż na start
+            img2.style.display = 'block'; 
             img2.src = FOTO_PATH + i.Kod + "_2.jpg";
+            
+            const img3 = document.getElementById('mImg3');
+            img3.style.display = 'block'; 
+            img3.src = FOTO_PATH + i.Kod + "_3.jpg";
             
             document.getElementById('modal').style.display = 'flex';
         }
