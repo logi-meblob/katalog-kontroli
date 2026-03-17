@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Kontroli - Meblobranie</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -26,6 +28,7 @@
         .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+        /* Dodane style dla strzałek */
         .nav-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; }
         .nav-btn:hover { background: #3b82f6; }
     </style>
@@ -35,7 +38,7 @@
     <div class="container">
         <div class="header">
             <h1>Katalog Kontroli Meblobranie</h1>
-            <div id="statusInfo">Wczytywanie...</div>
+            <div id="statusInfo">Inicjalizacja systemu...</div>
         </div>
         
         <div class="filter-panel">
@@ -52,7 +55,7 @@
                 <select id="filterKondycja" onchange="applyFilters()"><option value="">Wszystkie</option></select>
             </div>
             <div style="display: flex; align-items: flex-end;">
-                <button onclick="sortByDate()" class="view-btn" style="width: 100%; font-weight: bold;">Data ↕</button>
+                <button onclick="sortByDate()" class="view-btn" style="width: 100%; font-weight: bold;">Sortuj datę <span id="sortIcon">↕</span></button>
             </div>
         </div>
 
@@ -65,7 +68,7 @@
                         <th>Data kontroli</th>
                         <th style="text-align: center;">Kondycja</th>
                         <th>Asortyment</th>
-                        <th style="text-align: center;">Otwórz</th>
+                        <th style="text-align: center;">Szczegóły</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -73,15 +76,15 @@
         </div>
     </div>
 
-    <div id="modal" onclick="if(event.target == this) closeModal()">
+    <div id="modal" onclick="if(event.target == this) toggleModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:15px; right:20px; border:none; background:none; font-size:35px; cursor:pointer;" onclick="closeModal()">&times;</button>
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index: 101;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
             
-            <div style="position: relative; height: 320px;">
-                <button class="nav-btn" style="left: -10px;" onclick="changeImg(-1)">&#10094;</button>
-                <img id="mImg" src="" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
-                <button class="nav-btn" style="right: -10px;" onclick="changeImg(1)">&#10095;</button>
+            <div style="position: relative;">
+                <button class="nav-btn" style="left: -15px;" onclick="changeImg(-1)">&#10094;</button>
+                <img id="mImg" src="" alt="Zdjęcie produktu" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
+                <button class="nav-btn" style="right: -15px;" onclick="changeImg(1)">&#10095;</button>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -94,8 +97,7 @@
 
     <script>
         const EXCEL_FILE = "dane.xlsx";
-        // UWAGA: Sprawdź czy masz folder foto czy foto/foto. Ustawiam na foto/
-        const FOTO_PATH = "foto/"; 
+        const FOTO_PATH = "foto/";
         let rawData = [];
         let dateAsc = false;
         let currentKod = "";
@@ -104,17 +106,25 @@
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
-                const response = await fetch(EXCEL_FILE + '?v=' + Date.now());
+                const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+                
+                if (!response.ok) throw new Error("Status: " + response.status + " - Brak dostępu do pliku.");
+                
                 const data = await response.arrayBuffer();
                 const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 
+                if (rawData.length === 0) throw new Error("Plik Excel jest pusty.");
+
                 populateFilters();
                 render(rawData);
-                status.innerText = "Aktywne: " + rawData.length;
+                status.innerText = "Baza aktywna: " + rawData.length + " poz.";
+                status.style.background = "#dcfce7"; status.style.color = "#166534";
             } catch (err) {
-                status.innerText = "BŁĄD PLIKU";
-                console.error(err);
+                status.innerText = "BŁĄD: " + err.message;
+                status.style.background = "#fee2e2"; status.style.color = "#991b1b";
             }
         }
 
@@ -138,9 +148,10 @@
 
         function sortByDate() {
             dateAsc = !dateAsc;
+            document.getElementById('sortIcon').innerText = dateAsc ? "↑" : "↓";
             rawData.sort((a,b) => {
-                const dA = new Date(a['Data kontroli'] || 0);
-                const dB = new Date(b['Data kontroli'] || 0);
+                const dA = new Date(a['Data kontroli'] || a['Data kontrol'] || 0);
+                const dB = new Date(b['Data kontroli'] || b['Data kontrol'] || 0);
                 return dateAsc ? dA - dB : dB - dA;
             });
             applyFilters();
@@ -150,7 +161,7 @@
             document.getElementById('tableBody').innerHTML = data.map(i => `
                 <tr>
                     <td style="font-weight:800; color:#1e3a8a;">${i.Kod || '---'}</td>
-                    <td>${i.SKU || '---'}</td>
+                    <td style="color:#64748b; font-family:monospace;">${i.SKU || '---'}</td>
                     <td>${i['Data kontroli'] instanceof Date ? i['Data kontroli'].toLocaleDateString('pl-PL') : (i['Data kontroli'] || '---')}</td>
                     <td style="text-align:center;"><span class="badge ${i.Kondycja === 'HDL' ? 'badge-hdl' : 'badge-dam'}">${i.Kondycja || '---'}</span></td>
                     <td>${i.Asortyment || '---'}</td>
@@ -185,7 +196,7 @@
             updateImage();
         }
 
-        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        function toggleModal() { document.getElementById('modal').style.display = 'none'; }
         window.onload = init;
     </script>
 </body>
