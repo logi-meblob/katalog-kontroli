@@ -28,9 +28,6 @@
         .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-        /* Dodane style dla strzałek */
-        .nav-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; }
-        .nav-btn:hover { background: #3b82f6; }
     </style>
 </head>
 <body>
@@ -78,15 +75,9 @@
 
     <div id="modal" onclick="if(event.target == this) toggleModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index: 101;" onclick="toggleModal()">&times;</button>
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
-            
-            <div style="position: relative;">
-                <button class="nav-btn" style="left: -15px;" onclick="changeImg(-1)">&#10094;</button>
-                <img id="mImg" src="" alt="Zdjęcie produktu" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
-                <button class="nav-btn" style="right: -15px;" onclick="changeImg(1)">&#10095;</button>
-            </div>
-
+            <img id="mImg" src="" alt="Zdjęcie produktu">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
                 <div class="info-card"><small>Kondycja</small><br><strong id="mKond"></strong></div>
@@ -100,12 +91,11 @@
         const FOTO_PATH = "foto/";
         let rawData = [];
         let dateAsc = false;
-        let currentKod = "";
-        let currentNum = 1;
 
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
+                // SharePoint wymaga czasem pełnego uwierzytelnienia przy fetchu
                 const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
                     headers: { 'Cache-Control': 'no-cache' }
                 });
@@ -173,27 +163,12 @@
         function openModal(kod) {
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
-            currentKod = kod;
-            currentNum = 1;
-            
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            
-            updateImage();
+            document.getElementById('mImg').src = FOTO_PATH + i.Kod + ".jpg";
             document.getElementById('modal').style.display = 'flex';
-        }
-
-        function updateImage() {
-            const suffix = currentNum === 1 ? "" : "_" + currentNum;
-            document.getElementById('mImg').src = FOTO_PATH + currentKod + suffix + ".jpg";
-        }
-
-        function changeImg(step) {
-            currentNum += step;
-            if (currentNum < 1) currentNum = 1;
-            updateImage();
         }
 
         function toggleModal() { document.getElementById('modal').style.display = 'none'; }
