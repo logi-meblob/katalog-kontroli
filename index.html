@@ -28,10 +28,9 @@
         .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-
-        /* DODANE STYLE DLA PRZYCISKÓW GALERII */
-        .gal-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .gal-btn:hover { background: #3b82f6; }
+        
+        /* DODANY STYL STRZAŁEK */
+        .gal-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; z-index: 1000; }
     </style>
 </head>
 <body>
@@ -79,13 +78,13 @@
 
     <div id="modal" onclick="if(event.target == this) toggleModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index: 1001;" onclick="toggleModal()">&times;</button>
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
             
             <button class="gal-btn" style="left: 10px;" onclick="przelaczZdjecie(-1)">&#10094;</button>
             <img id="mImg" src="" alt="Zdjęcie produktu" onerror="this.src='https://via.placeholder.com/400x300?text=Brak+kolejnych+zdj%C4%99%C4%87'">
             <button class="gal-btn" style="right: 10px;" onclick="przelaczZdjecie(1)">&#10095;</button>
-
+            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
                 <div class="info-card"><small>Kondycja</small><br><strong id="mKond"></strong></div>
@@ -103,7 +102,6 @@
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
-                // SharePoint wymaga czasem pełnego uwierzytelnienia przy fetchu
                 const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
                     headers: { 'Cache-Control': 'no-cache' }
                 });
@@ -168,31 +166,30 @@
             `).join('');
         }
 
-        // --- DODANE FUNKCJE OBSŁUGI ZDJĘĆ ---
-        let aktKod = "";
-        let aktNr = 1;
+        // --- TYLKO TA CZĘŚĆ ZOSTAŁA DODANA DLA GALERII ---
+        let aktK = "";
+        let aktN = 1;
 
         function openModal(kod) {
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
-            aktKod = kod; aktNr = 1; // Zapisz kod i zresetuj numer do 1
+            aktK = kod; aktN = 1;
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            wyswietlZdjecie();
+            ladujZdjecie();
             document.getElementById('modal').style.display = 'flex';
         }
 
-        function wyswietlZdjecie() {
-            const sufiks = aktNr === 1 ? "" : "_" + aktNr;
-            document.getElementById('mImg').src = FOTO_PATH + aktKod + sufiks + ".jpg";
+        function ladujZdjecie() {
+            const s = aktN === 1 ? "" : "_" + aktN;
+            document.getElementById('mImg').src = FOTO_PATH + aktK + s + ".jpg";
         }
 
-        function przelaczZdjecie(kierunek) {
-            aktNr += kierunek;
-            if (aktNr < 1) aktNr = 1;
-            wyswietlZdjecie();
+        function przelaczZdjecie(d) {
+            aktN += d; if (aktN < 1) aktN = 1;
+            ladujZdjecie();
         }
 
         function toggleModal() { document.getElementById('modal').style.display = 'none'; }
