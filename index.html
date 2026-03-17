@@ -29,9 +29,8 @@
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
         
-        /* NOWE STYLE DLA GALERII */
-        .nav-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2); z-index: 10; }
-        .nav-btn:hover { background: #3b82f6; }
+        /* Styl przycisków galerii */
+        .nav-btn { position: absolute; top: 170px; background: #1e3a8a; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; z-index: 100; }
     </style>
 </head>
 <body>
@@ -79,7 +78,7 @@
 
     <div id="modal" onclick="if(event.target == this) toggleModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index:11;" onclick="toggleModal()">&times;</button>
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
             
             <button class="nav-btn" style="left: 10px;" onclick="changeImg(-1)">&#10094;</button>
@@ -100,14 +99,13 @@
         let rawData = [];
         let dateAsc = false;
         
-        // ZMIENNE DLA GALERII
+        // POTRZEBNE DO GALERII
         let currentKod = "";
-        let currentImgNum = 1;
+        let currentNum = 1;
 
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
-                // SharePoint wymaga czasem pełnego uwierzytelnienia przy fetchu
                 const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
                     headers: { 'Cache-Control': 'no-cache' }
                 });
@@ -176,29 +174,29 @@
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
             
-            // RESET LICZNIKA ZDJĘĆ
+            // USTAW DANE DLA STRZAŁEK
             currentKod = kod;
-            currentImgNum = 1;
+            currentNum = 1;
 
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
             
-            updateModalImg(); // Funkcja ustawiająca źródło obrazu
+            updateImg();
             document.getElementById('modal').style.display = 'flex';
         }
 
-        // FUNKCJA ZMIENIAJĄCA OBRAZ
-        function updateModalImg() {
-            const suffix = currentImgNum === 1 ? "" : "_" + currentImgNum;
+        // LOGIKA STRZAŁEK
+        function updateImg() {
+            const suffix = currentNum === 1 ? "" : "_" + currentNum;
             document.getElementById('mImg').src = FOTO_PATH + currentKod + suffix + ".jpg";
         }
 
         function changeImg(dir) {
-            currentImgNum += dir;
-            if(currentImgNum < 1) currentImgNum = 1;
-            updateModalImg();
+            currentNum += dir;
+            if (currentNum < 1) currentNum = 1;
+            updateImg();
         }
 
         function toggleModal() { document.getElementById('modal').style.display = 'none'; }
