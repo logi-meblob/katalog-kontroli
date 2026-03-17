@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Kontroli - Meblobranie</title>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f1f5f9; color: #1e293b; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
@@ -28,6 +26,8 @@
         .modal-content { background: white; width: 90%; max-width: 500px; padding: 30px; border-radius: 24px; position: relative; }
         #mImg { width: 100%; height: 300px; object-fit: contain; background: #f1f5f9; border-radius: 16px; margin: 20px 0; border: 1px solid #e2e8f0; }
         .info-card { background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: white; border: 1px solid #e2e8f0; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; }
+        .nav-btn:hover { background: #f8fafc; }
     </style>
 </head>
 <body>
@@ -75,9 +75,16 @@
 
     <div id="modal" onclick="if(event.target == this) toggleModal()">
         <div class="modal-content">
-            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer;" onclick="toggleModal()">&times;</button>
+            <button style="position:absolute; top:20px; right:20px; border:none; background:none; font-size:30px; cursor:pointer; z-index:10;" onclick="toggleModal()">&times;</button>
             <h2 id="mTitle" style="color: #1e3a8a; margin: 0;"></h2>
-            <img id="mImg" src="" alt="Zdjęcie produktu">
+            
+            <div style="position: relative;">
+                <button id="prevBtn" class="nav-btn" style="left: -20px;" onclick="changeImage(-1)">&#10094;</button>
+                <img id="mImg" src="" alt="Zdjęcie produktu">
+                <button id="nextBtn" class="nav-btn" style="right: -20px;" onclick="changeImage(1)">&#10095;</button>
+                <div id="imgCounter" style="text-align:center; font-size:11px; color:#94a3b8; margin-top:-15px; margin-bottom:10px;"></div>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div class="info-card"><small>SKU</small><br><strong id="mSku"></strong></div>
                 <div class="info-card"><small>Kondycja</small><br><strong id="mKond"></strong></div>
@@ -88,33 +95,28 @@
 
     <script>
         const EXCEL_FILE = "dane.xlsx";
-        const FOTO_PATH = "foto/";
+        const FOTO_PATH = "foto/foto/"; // Poprawione na Twój folder na GitHubie
         let rawData = [];
         let dateAsc = false;
+        
+        // Zmienne dla galerii
+        let currentImgIndex = 0;
+        let availableImages = [];
 
         async function init() {
             const status = document.getElementById('statusInfo');
             try {
-                // SharePoint wymaga czasem pełnego uwierzytelnienia przy fetchu
-                const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime(), {
-                    headers: { 'Cache-Control': 'no-cache' }
-                });
-                
-                if (!response.ok) throw new Error("Status: " + response.status + " - Brak dostępu do pliku.");
-                
+                const response = await fetch(EXCEL_FILE + '?v=' + new Date().getTime());
+                if (!response.ok) throw new Error("Brak dostępu do pliku Excel.");
                 const data = await response.arrayBuffer();
                 const workbook = XLSX.read(data, {type: 'array', cellDates: true});
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-                
-                if (rawData.length === 0) throw new Error("Plik Excel jest pusty.");
-
                 populateFilters();
                 render(rawData);
                 status.innerText = "Baza aktywna: " + rawData.length + " poz.";
-                status.style.background = "#dcfce7"; status.style.color = "#166534";
             } catch (err) {
                 status.innerText = "BŁĄD: " + err.message;
-                status.style.background = "#fee2e2"; status.style.color = "#991b1b";
+                status.style.background = "#fee2e2";
             }
         }
 
@@ -140,8 +142,8 @@
             dateAsc = !dateAsc;
             document.getElementById('sortIcon').innerText = dateAsc ? "↑" : "↓";
             rawData.sort((a,b) => {
-                const dA = new Date(a['Data kontroli'] || a['Data kontrol'] || 0);
-                const dB = new Date(b['Data kontroli'] || b['Data kontrol'] || 0);
+                const dA = new Date(a['Data kontroli'] || 0);
+                const dB = new Date(b['Data kontroli'] || 0);
                 return dateAsc ? dA - dB : dB - dA;
             });
             applyFilters();
@@ -160,15 +162,42 @@
             `).join('');
         }
 
-        function openModal(kod) {
+        async function openModal(kod) {
             const i = rawData.find(x => String(x.Kod) === String(kod));
             if(!i) return;
+
             document.getElementById('mTitle').innerText = "Kod: " + i.Kod;
             document.getElementById('mSku').innerText = i.SKU || '---';
             document.getElementById('mKond').innerText = i.Kondycja || '---';
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            document.getElementById('mImg').src = FOTO_PATH + i.Kod + ".jpg";
+            
+            // Logika sprawdzania wielu zdjęć
+            availableImages = [FOTO_PATH + i.Kod + ".jpg"];
+            for (let n = 2; n <= 5; n++) { // Sprawdza do 5 zdjęć (_2, _3, _4, _5)
+                const nextImg = FOTO_PATH + i.Kod + "_" + n + ".jpg";
+                try {
+                    const check = await fetch(nextImg, { method: 'HEAD' });
+                    if (check.ok) availableImages.push(nextImg);
+                } catch (e) {}
+            }
+
+            currentImgIndex = 0;
+            updateModalImage();
             document.getElementById('modal').style.display = 'flex';
+        }
+
+        function updateModalImage() {
+            document.getElementById('mImg').src = availableImages[currentImgIndex];
+            document.getElementById('prevBtn').style.display = availableImages.length > 1 ? 'block' : 'none';
+            document.getElementById('nextBtn').style.display = availableImages.length > 1 ? 'block' : 'none';
+            document.getElementById('imgCounter').innerText = availableImages.length > 1 ? `Zdjęcie ${currentImgIndex + 1} z ${availableImages.length}` : '';
+        }
+
+        function changeImage(dir) {
+            currentImgIndex += dir;
+            if (currentImgIndex < 0) currentImgIndex = availableImages.length - 1;
+            if (currentImgIndex >= availableImages.length) currentImgIndex = 0;
+            updateModalImage();
         }
 
         function toggleModal() { document.getElementById('modal').style.display = 'none'; }
