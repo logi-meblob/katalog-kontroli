@@ -14,7 +14,7 @@
 
     <div class="max-w-6xl mx-auto">
         <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm mb-6">
-            <h1 class="text-2xl font-black text-blue-900">Katalog Meblobranie</h1>
+            <h1 class="text-2xl font-black text-blue-900">Katalog konroli uszkodzeń</h1>
             <div id="statusInfo" class="px-4 py-2 rounded-full text-xs font-bold bg-blue-50 text-blue-600 transition-all uppercase tracking-widest">
                 Wczytywanie...
             </div>
@@ -94,7 +94,7 @@
                 
                 populateFilters();
                 render(rawData);
-                status.innerText = "Aktywnych: " + rawData.length;
+                status.innerText = "Ilość pozycji: " + rawData.length;
                 status.classList.replace('text-blue-600', 'text-green-600');
             } catch (err) {
                 status.innerText = "BŁĄD: " + err.message;
