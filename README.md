@@ -12,7 +12,7 @@ Otwórz plik `dane.csv` i dopisz nowy wiersz na samym dole. Pamiętaj o zachowan
 `Kod;SKU;RSL TAG;Data kontroli;Kondycja;Opis;Asortyment`
 
 **Przykład:**
-`234122678;48116;WAR-7234;27.03.2026;HDLS;pod nową kondycję;Greenhouse`
+`234122678;48116;WAR-7234;27.03.2026;HDLS;dziura w kartonie;Greenhouse`
 
 ### Ważne zasady:
 * **Kod:** To unikalny numer (np. 234122678). Musi być taki sam jak nazwa pliku zdjęcia.
