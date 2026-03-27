@@ -1,5 +1,3 @@
-# katalog-kontroli
-
 # Instrukcja dodawania nowych rekordów do katalogu
 
 Aby nowa kontrola pojawiła się w systemie, należy wykonać dwa kroki: dodać wpis w pliku CSV oraz wgrać zdjęcia do odpowiedniego folderu.
