@@ -45,4 +45,4 @@ Nazwa zdjęcia musi zaczynać się od **Kodu** wpisanego w pliku CSV:
 3. Wejdź do folderu `foto`, kliknij **Add file** -> **Upload files** i przeciągnij zdjęcia z komputera.
 4. Kliknij **Commit changes**.
 
-Po chwili zmiany będą widoczne w Twoim katalogu online!
+Po około minucie zmiany będą widoczne w Twoim katalogu online!
