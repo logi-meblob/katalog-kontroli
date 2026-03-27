@@ -47,6 +47,7 @@
                         <tr class="text-[11px] uppercase font-black text-slate-400 tracking-tighter">
                             <th class="p-4">Kod</th>
                             <th class="p-4">SKU</th>
+                            <th class="p-4">RSL TAG</th>
                             <th class="p-4">Data kontroli</th>
                             <th class="p-4 text-center">Kondycja</th>
                             <th class="p-4">Asortyment</th>
@@ -133,7 +134,7 @@
             const fK = document.getElementById('filterKondycja').value;
             
             const filtered = rawData.filter(i => {
-                const mTxt = (i.Kod + i.SKU).toLowerCase().includes(txt);
+                const mTxt = (i.Kod + i.SKU+ (i['RSL TAG'] || '')).toLowerCase().includes(txt);
                 return mTxt && (!fA || i.Asortyment === fA) && (!fK || i.Kondycja === fK);
             });
             render(filtered);
@@ -154,6 +155,7 @@
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-4 font-black text-blue-900">${i.Kod}</td>
                     <td class="p-4 text-slate-400 font-mono text-xs">${i.SKU}</td>
+                    <td class="p-4 font-medium text-blue-600">${i['RSL TAG'] || '---'}</td>
                     <td class="p-4">${i['Data kontroli'] || '---'}</td>
                     <td class="p-4 text-center"><span class="px-2 py-1 rounded-md font-bold text-[10px] ${i.Kondycja === 'HDL' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${i.Kondycja}</span></td>
                     <td class="p-4 font-medium text-slate-600">${i.Asortyment}</td>
@@ -167,6 +169,7 @@
             if(!i) return;
             document.getElementById('mTitle').innerText = i.Kod;
             document.getElementById('mSku').innerText = i.SKU;
+            document.getElementById('mRsl').innerText = i['RSL TAG'] || '---';
             document.getElementById('mKond').innerText = i.Kondycja;
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
             
