@@ -1,6 +1,6 @@
-﻿Kod;SKU;Data kontroli;Kondycja;Opis;Asortyment
-12345;44444;10.03.2026;HDL;opis;Sodor
-23456;22222;05.03.2026;DAM;opis;Okapi
-45678;55522;17.01.2026;DAM;chyba się zapadło;Dettel
-32134;44444;11.02.2026;DAM;dla testów;Sodor
-521119992;32465;18.03.2026;HDL;test pod CSV;Niro
+﻿Kod;SKU;RSL TAG;Data kontroli;Kondycja;Opis;Asortyment
+12345;44444;TAG-1234;10.03.2026;HDL;opis;Sodor
+23456;22222;TAG-2431;05.03.2026;DAM;opis;Okapi
+45678;55522;TAG-5678;17.01.2026;DAM;chyba się zapadło;Dettel
+32134;44444;TAG-1234;11.02.2026;DAM;dla testów;Sodor
+521119992;32465;TAG-2431;18.03.2026;HDL;test pod CSV;Niro
