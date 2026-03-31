@@ -111,9 +111,9 @@
         }
 
         function parseCSV(text) {
-            // Rozbijamy na linie i usuwamy puste
+        
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-            // Pierwsza linia to nagłówki
+            
             const headers = lines[0].split(';').map(h => h.trim());
             
             return lines.slice(1).map(line => {
@@ -193,20 +193,17 @@
             document.body.classList.remove('modal-active');
         }
         function downloadCSV() {
-            // 1. Pobieramy dzisiejszą datę
             const now = new Date();
             const dzien = String(now.getDate()).padStart(2, '0');
-            const miesiac = String(now.getMonth() + 1).padStart(2, '0'); // Miesiące są od 0 do 11
+            const miesiac = String(now.getMonth() + 1).padStart(2, '0'); 
             const rok = now.getFullYear();
     
             const nazwaPliku = `katalog_${dzien}_${miesiac}_${rok}.csv`;
 
-            // 2. Tworzymy "wirtualny" link do pobrania
             const link = document.createElement('a');
-            link.href = CSV_FILE; // Korzysta ze zmiennej, którą już masz w kodzie
+            link.href = CSV_FILE; 
             link.download = nazwaPliku;
     
-            // 3. Symulujemy kliknięcie i usuwamy link
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
