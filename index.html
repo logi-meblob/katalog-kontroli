@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <div class="flex items-center gap-4">
-    <a href="https://logi-meblob.github.io/main/" class="flex items-center justify-center w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all shadow-sm group">
-        <span class="text-xl group-hover:-translate-x-0.5 transition-transform">←</span>
-    </a>
-    <h1 class="text-2xl font-black text-blue-900">Katalog kontroli uszkodzeń</h1>
-    </div>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katalog Kontroli - Meblobranie</title>
@@ -19,20 +13,25 @@
 <body class="bg-slate-100 p-4 md:p-8 text-slate-800">
 
     <div class="max-w-6xl mx-auto">
-    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm mb-6">
-        <h1 class="text-2xl font-black text-blue-900">Katalog kontroli uszkodzeń</h1>
-        
-        <div class="flex items-center gap-4">
-            <button onclick="downloadCSV()" class="hidden md:block px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 rounded-xl text-[10px] font-black transition uppercase tracking-widest border border-yellow-100">
-            Pobierz CSV ↓
-            </button>
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm mb-6 gap-4">
+            <div class="flex items-center gap-4">
+                <a href="https://logi-meblob.github.io/main/" class="flex items-center justify-center w-10 h-10 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-500 rounded-xl transition-all shadow-sm group">
+                    <span class="text-xl group-hover:-translate-x-1 transition-transform">←</span>
+                </a>
+                <h1 class="text-2xl font-black text-blue-900">Katalog kontroli uszkodzeń</h1>
+            </div>
             
-            <div id="statusInfo" class="px-4 py-2 rounded-full text-xs font-bold bg-blue-50 text-blue-600 transition-all uppercase tracking-widest">
-                Wczytywanie...
+            <div class="flex items-center gap-4">
+                <button onclick="downloadCSV()" class="hidden md:block px-4 py-2 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 rounded-xl text-[10px] font-black transition uppercase tracking-widest border border-yellow-100">
+                Pobierz CSV ↓
+                </button>
+                
+                <div id="statusInfo" class="px-4 py-2 rounded-full text-xs font-bold bg-blue-50 text-blue-600 transition-all uppercase tracking-widest">
+                    Wczytywanie...
+                </div>
             </div>
         </div>
-    </div>
-        
+            
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-6 rounded-2xl shadow-sm mb-6 border border-slate-200">
             <div>
                 <label class="block text-[10px] font-black text-slate-400 uppercase mb-2">Szukaj (Kod/SKU/RSL TAG)</label>
@@ -117,11 +116,8 @@
         }
 
         function parseCSV(text) {
-        
             const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-            
             const headers = lines[0].split(';').map(h => h.trim());
-            
             return lines.slice(1).map(line => {
                 const values = line.split(';').map(v => v.trim());
                 let obj = {};
@@ -133,10 +129,8 @@
         function populateFilters() {
             const asort = [...new Set(rawData.map(i => i.Asortyment))].filter(Boolean).sort();
             const kond = [...new Set(rawData.map(i => i.Kondycja))].filter(Boolean).sort();
-            
             const fA = document.getElementById('filterAsortyment');
             const fK = document.getElementById('filterKondycja');
-            
             fA.innerHTML = '<option value="">Wszystkie</option>' + asort.map(v => `<option value="${v}">${v}</option>`).join('');
             fK.innerHTML = '<option value="">Wszystkie</option>' + kond.map(v => `<option value="${v}">${v}</option>`).join('');
         }
@@ -145,9 +139,8 @@
             const txt = document.getElementById('searchTxt').value.toLowerCase();
             const fA = document.getElementById('filterAsortyment').value;
             const fK = document.getElementById('filterKondycja').value;
-            
             const filtered = rawData.filter(i => {
-                const mTxt = (i.Kod + i.SKU+ (i['RSL TAG'] || '')).toLowerCase().includes(txt);
+                const mTxt = (i.Kod + i.SKU + (i['RSL TAG'] || '')).toLowerCase().includes(txt);
                 return mTxt && (!fA || i.Asortyment === fA) && (!fK || i.Kondycja === fK);
             });
             render(filtered);
@@ -184,12 +177,10 @@
             document.getElementById('mSku').innerText = i.SKU;
             document.getElementById('mKond').innerText = i.Kondycja;
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            
             const photos = [`${i.Kod}.jpg`, `${i.Kod}_2.jpg`, `${i.Kod}_3.jpg`];
             document.getElementById('modalPhotos').innerHTML = photos.map(p => 
                 `<img src="${FOTO_PATH}${p}" class="img-box mb-4" onerror="this.style.display='none'">`
             ).join('');
-
             document.getElementById('modal').style.display = 'flex';
             document.body.classList.add('modal-active');
         }
@@ -198,18 +189,16 @@
             document.getElementById('modal').style.display = 'none';
             document.body.classList.remove('modal-active');
         }
+
         function downloadCSV() {
             const now = new Date();
             const dzien = String(now.getDate()).padStart(2, '0');
             const miesiac = String(now.getMonth() + 1).padStart(2, '0'); 
             const rok = now.getFullYear();
-    
             const nazwaPliku = `katalog_${dzien}_${miesiac}_${rok}.csv`;
-
             const link = document.createElement('a');
             link.href = CSV_FILE; 
             link.download = nazwaPliku;
-    
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
