@@ -177,7 +177,7 @@
             document.getElementById('mSku').innerText = i.SKU;
             document.getElementById('mKond').innerText = i.Kondycja;
             document.getElementById('mOpis').innerText = i.Opis || "Brak uwag.";
-            const photos = [`${i.Kod}.jpg`, `${i.Kod}_2.jpg`, `${i.Kod}_3.jpg`];
+            const photos = [`${i.Kod}.jpg`, `${i.Kod}_2.jpg`, `${i.Kod}_3.jpg`, `${i.Kod}_4.jpg`, `${i.Kod}_5.jpg`, `${i.Kod}_6.jpg`, `${i.Kod}_7.jpg`, `${i.Kod}_8.jpg`, `${i.Kod}_9.jpg`, `${i.Kod}_10.jpg`];
             document.getElementById('modalPhotos').innerHTML = photos.map(p => 
                 `<img src="${FOTO_PATH}${p}" class="img-box mb-4" onerror="this.style.display='none'">`
             ).join('');
