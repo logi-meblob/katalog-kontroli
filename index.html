@@ -69,6 +69,8 @@
                     <tbody id="tableBody" class="divide-y divide-slate-50 text-sm"></tbody>
                 </table>
             </div>
+            
+            <div id="pagination" class="flex flex-wrap justify-center items-center gap-2 p-4 bg-slate-50 border-t border-slate-100"></div>
         </div>
     </div>
 
@@ -94,7 +96,12 @@
         const CSV_FILE = "dane.csv";
         const FOTO_PATH = "foto/";
         let rawData = [];
+        let filteredData = []; // Nowa zmienna przechowująca przefiltrowane dane
         let dateAsc = false;
+        
+        // Zmienne paginacji
+        let currentPage = 1;
+        const rowsPerPage = 50;
 
         async function init() {
             const status = document.getElementById('statusInfo');
@@ -104,9 +111,10 @@
                 
                 const text = await response.text();
                 rawData = parseCSV(text);
+                filteredData = [...rawData]; // Na start przefiltrowane to samo co raw
                 
                 populateFilters();
-                render(rawData);
+                render();
                 status.innerText = "Ilość pozycji: " + rawData.length;
                 status.classList.replace('text-blue-600', 'text-green-600');
             } catch (err) {
@@ -139,11 +147,14 @@
             const txt = document.getElementById('searchTxt').value.toLowerCase();
             const fA = document.getElementById('filterAsortyment').value;
             const fK = document.getElementById('filterKondycja').value;
-            const filtered = rawData.filter(i => {
+            
+            filteredData = rawData.filter(i => {
                 const mTxt = (i.Kod + i.SKU + (i['RSL TAG'] || '')).toLowerCase().includes(txt);
                 return mTxt && (!fA || i.Asortyment === fA) && (!fK || i.Kondycja === fK);
             });
-            render(filtered);
+            
+            currentPage = 1; // Reset do pierwszej strony przy zmianie filtrów
+            render();
         }
 
         function sortByDate() {
@@ -156,8 +167,14 @@
             applyFilters();
         }
 
-        function render(data) {
-            document.getElementById('tableBody').innerHTML = data.map(i => `
+        function render() {
+            // Obliczanie indeksów dla obecnej strony
+            const startIndex = (currentPage - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+
+            // Renderowanie wierszy tabeli
+            document.getElementById('tableBody').innerHTML = paginatedData.map(i => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-4 font-black text-blue-900">${i.Kod}</td>
                     <td class="p-4 text-slate-400 font-mono text-xs">${i.SKU}</td>
@@ -168,6 +185,45 @@
                     <td class="p-4 text-center"><button onclick="openModal('${i.Kod}')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-blue-600 hover:text-white transition">🔍</button></td>
                 </tr>
             `).join('');
+
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+            const container = document.getElementById('pagination');
+            
+            if (pageCount <= 1) {
+                container.innerHTML = ""; // Ukryj paginację jeśli jest tylko 1 strona
+                return;
+            }
+
+            let html = '';
+            
+            // Przycisk "Poprzednia"
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white">←</button>`;
+
+            // Przyciski z numerami stron
+            for (let i = 1; i <= pageCount; i++) {
+                if (i === currentPage) {
+                    html += `<button class="px-3 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-md shadow-blue-100">${i}</button>`;
+                } else {
+                    html += `<button onclick="changePage(${i})" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition">${i}</button>`;
+                }
+            }
+
+            // Przycisk "Następna"
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === pageCount ? 'disabled' : ''} class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-white">→</button>`;
+
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+            if (page < 1 || page > pageCount) return;
+            currentPage = page;
+            render();
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Przewija na górę strony po zmianie
         }
 
         function openModal(kod) {
